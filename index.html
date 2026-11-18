@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тест: Администрирование в информационных системах</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --text:#1d2330; --muted:#677084; --line:#e2e5ea;
+    --accent:#2f6fdf; --accent-soft:#e8f0fd; --ok:#1f8a4c; --ok-soft:#e5f5ec;
+    --bad:#c4372f; --bad-soft:#fbe9e7; --warn:#a86a00; --warn-soft:#fdf3df;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14171d; --card:#1d2129; --text:#e7e9ee; --muted:#9aa3b5; --line:#2e3440;
+      --accent:#6b9cff; --accent-soft:#22304a; --ok:#4cc584; --ok-soft:#173326;
+      --bad:#ff7a70; --bad-soft:#3a1f1d; --warn:#f0b54a; --warn-soft:#3a2f17;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  .wrap{max-width:780px;margin:0 auto;padding:28px 16px 60px}
+  h1{font-size:1.55rem;margin:0 0 6px}
+  h2{font-size:1.2rem;margin:0 0 14px}
+  .sub{color:var(--muted);margin:0 0 22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px}
+  .grid{display:grid;gap:10px}
+  .choice{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);
+    border-radius:10px;cursor:pointer;background:transparent;color:inherit;font:inherit;text-align:left;width:100%}
+  .choice:hover{border-color:var(--accent)}
+  .choice.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .choice.right{border-color:var(--ok);background:var(--ok-soft)}
+  .choice.wrong{border-color:var(--bad);background:var(--bad-soft)}
+  .choice[disabled]{cursor:default}
+  .letter{flex:0 0 26px;height:26px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;
+    font-size:.85rem;font-weight:600;color:var(--muted)}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;
+    padding:10px 18px;border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
+  .btn.ghost{background:transparent;color:var(--accent)}
+  .btn.ok{background:var(--ok);border-color:var(--ok)}
+  .btn.bad{background:var(--bad);border-color:var(--bad)}
+  .btn[disabled]{opacity:.45;cursor:default}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .between{justify-content:space-between}
+  .tag{display:inline-block;font-size:.78rem;font-weight:600;padding:3px 9px;border-radius:999px;
+    background:var(--accent-soft);color:var(--accent);margin-right:6px}
+  .tag.open{background:var(--warn-soft);color:var(--warn)}
+  .q{font-size:1.08rem;font-weight:600;margin:12px 0 16px}
+  .bar{height:6px;background:var(--line);border-radius:999px;overflow:hidden;margin:6px 0 18px}
+  .bar>i{display:block;height:100%;background:var(--accent);transition:width .25s}
+  .muted{color:var(--muted)}
+  .expl{margin-top:16px;padding:14px 16px;border-radius:10px;background:var(--accent-soft);font-size:.95rem}
+  .expl.ok{background:var(--ok-soft)} .expl.bad{background:var(--bad-soft)}
+  textarea{width:100%;min-height:120px;padding:12px;border-radius:10px;border:1px solid var(--line);
+    background:transparent;color:inherit;font:inherit;resize:vertical}
+  ul.keys{margin:8px 0 0 0;padding-left:20px}
+  ul.keys li{margin:3px 0}
+  label.opt{display:flex;gap:10px;align-items:center;padding:10px 0;cursor:pointer}
+  .score{font-size:2.6rem;font-weight:700;margin:4px 0}
+  table{width:100%;border-collapse:collapse;font-size:.95rem}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+  .rev{border-left:4px solid var(--line);padding:10px 14px;margin:10px 0;border-radius:6px;background:var(--bg)}
+  .rev.ok{border-color:var(--ok)} .rev.bad{border-color:var(--bad)}
+  .small{font-size:.88rem}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+/* ===================== ВОПРОСЫ =====================
+   type: "mc"   — выбор одного ответа, correct = индекс правильного варианта
+   type: "open" — открытый вопрос, answer = эталон, keys = ключевые пункты
+   lecture: 1, 2, 3                                                         */
+const LECTURES = {
+  1: "Лекция 1. ИС управления и работа системного администратора",
+  2: "Лекция 2. КИС, состав ИС и архитектура ПО",
+  3: "Лекция 3. Сетевое оборудование, адресация и маршрутизация"
+};
+
+const QUESTIONS = [
+  /* ---------- ЛЕКЦИЯ 1 ---------- */
+  {lecture:1,type:"mc",
+   q:"Какой класс информационных систем используют старшие менеджеры для обслуживания стратегического уровня организации?",
+   options:["Исполнительные системы поддержки принятия решений (ESS)","Управляющие информационные системы (MIS)","Системы диалоговой обработки запросов (TPS)","Системы автоматизации делопроизводства (OAS)"],
+   correct:0,
+   expl:"ESS обслуживают стратегический уровень, ориентированы на неструктурированные решения и учитывают внешнюю среду (налоговые законы, конкуренты)."},
+  {lecture:1,type:"mc",
+   q:"Какие системы объединяют данные, сложные аналитические модели и удобное ПО для поддержки слабоструктурированных и неструктурированных решений?",
+   options:["MIS","DSS","TPS","KWS"],
+   correct:1,
+   expl:"DSS (системы поддержки принятия решений) объединяют данные, аналитические модели и удобное ПО. Они находятся под управлением пользователя и используются ежедневно."},
+  {lecture:1,type:"mc",
+   q:"Что характерно для управляющих информационных систем (MIS)?",
+   options:["Включают данные о внешней среде и используют продвинутую графику","Используют больше аналитических моделей, чем DSS","Ориентированы на внутренние результаты, негибки, используют простые резюме и сравнения","Выполняют рутинные транзакции: продажи, бронирование, платёжную ведомость"],
+   correct:2,
+   expl:"MIS обслуживают управленческий уровень, ориентируются на внутренние результаты, обычно негибки и имеют мало аналитических возможностей."},
+  {lecture:1,type:"mc",
+   q:"Какой уровень организации обслуживают системы диалоговой обработки запросов (TPS)?",
+   options:["Стратегический","Управленческий","Уровень знаний","Эксплуатационный"],
+   correct:3,
+   expl:"TPS — основные деловые системы эксплуатационного уровня. Они выполняют рутинные транзакции: расчёты продаж, бронирование, платёжную ведомость, отгрузку."},
+  {lecture:1,type:"mc",
+   q:"Какую квалификационную группу по электробезопасности желательно иметь претенденту на должность системного администратора?",
+   options:["Не ниже 1","Не ниже 2","Не ниже 3 (до 1000 В)","Не ниже 5 (свыше 1000 В)"],
+   correct:2,
+   expl:"В лекции указано: важно иметь аттестованную квалификационную группу по электробезопасности не ниже 3 (до 1000 В)."},
+  {lecture:1,type:"mc",
+   q:"Пользователь пытается открыть файл на запись, имея только право просмотра, и система запрещает операцию. Какой процесс сработал?",
+   options:["Аутентификация","Авторизация (проверка прав доступа)","Регистрация пользователя","Аудит"],
+   correct:1,
+   expl:"Авторизация сопоставляет запрошенные права с фактическими правами пользователя и разрешает или отвергает доступ. Аутентификация лишь устанавливает подлинность пользователя."},
+  {lecture:1,type:"mc",
+   q:"Как в Unix называются регламенты, оформленные в виде контрольных списков и инструкций?",
+   options:["Run books / checklists","Man pages","Crontabs","Logbooks"],
+   correct:0,
+   expl:"В Unix такие инструкции называются «run books» или «checklists». Их пишет и поддерживает отдельная группа администраторов."},
+  {lecture:1,type:"mc",
+   q:"Какая доля нарушений защиты, по данным лекции, обычно происходит внутри организации?",
+   options:["Около 10 %","Около 30 %","Около 60 %","Около 90 %"],
+   correct:2,
+   expl:"В перечне типовых аварий указано: 60 % нарушений защиты обычно происходит внутри организации."},
+  {lecture:1,type:"open",
+   q:"Чем аутентификация отличается от авторизации? Приведите пример.",
+   answer:"Аутентификация — процесс установления подлинности пользователя: он предъявляет имя для входа и пароль, система проверяет наличие учётной записи и совпадение пароля. После успешной аутентификации на время сеанса создаётся дескриптор безопасности. Авторизация — процесс сопоставления запрошенных прав доступа к ресурсу с фактическими правами пользователя, после которого система разрешает или отвергает доступ. Пример: пользователь вошёл в систему (аутентификация), но при попытке открыть файл на запись с правом только на просмотр получил отказ (авторизация).",
+   keys:["Аутентификация — проверка подлинности (логин + пароль)","Создание дескриптора безопасности на время сеанса","Авторизация — сравнение запрошенных и фактических прав","Результат авторизации: разрешить или отвергнуть доступ","Корректный пример"]},
+  {lecture:1,type:"open",
+   q:"Перечислите не менее четырёх правил работы системного администратора из лекции.",
+   answer:"1) Никогда не проводить экспериментов на работающей системе; если это необходимо, сначала сделать полную резервную копию. 2) Не менять конфигурацию сервера (аппаратную и программную) без полной резервной копии. 3) Всегда документировать действия в журнале администратора, по возможности использовать встроенные средства аудита. 4) Перекладывать часть работы на подчинённых, если уверен, что они справятся. 5) Соотносить назначаемые права с мерой ответственности. 6) При обычной работе пользоваться учётной записью с обычными правами, а не администратора. 7) Регулярно менять пароль администратора и хранить его записанным в защищённом месте (сейф).",
+   keys:["Не экспериментировать на работающей системе","Резервная копия перед изменением конфигурации","Вести журнал администратора","Права соответствуют ответственности","Обычная учётная запись для повседневной работы","Регулярная смена пароля администратора"]},
+
+  /* ---------- ЛЕКЦИЯ 2 ---------- */
+  {lecture:2,type:"mc",
+   q:"Что означает принцип модульности при построении КИС?",
+   options:["Сквозное прохождение документов через различные службы","Возможность поэтапного внедрения системы","Возможность взаимодействовать с другими программами","Мощность механизма настроек"],
+   correct:1,
+   expl:"Модульность — возможность поэтапного внедрения. Сквозное прохождение документов — интегрированность, взаимодействие с другими программами — открытость, мощность настроек — адаптивность."},
+  {lecture:2,type:"mc",
+   q:"Какая обеспечивающая подсистема включает единую систему классификации и кодирования, унифицированные системы документации и схемы информационных потоков?",
+   options:["Техническое обеспечение","Организационное обеспечение","Информационное обеспечение","Математическое обеспечение"],
+   correct:2,
+   expl:"Информационное обеспечение — информационные массивы, единая система классификации и кодирования, унифицированная документация, схемы информационных потоков и методология построения БД."},
+  {lecture:2,type:"mc",
+   q:"Какая особенность характерна для централизованной формы технического обеспечения?",
+   options:["Требует от персонала больше личной ответственности","Затрудняет внедрение стандартизации","Облегчает управление и стандартизацию, но понижает ответственность и инициативу персонала","Реализует функциональные подсистемы на ПК прямо на рабочих местах"],
+   correct:2,
+   expl:"Централизованная форма опирается на большие ЭВМ и вычислительные центры: управлять и стандартизировать проще, но падают ответственность и инициатива персонала. Остальные варианты описывают децентрализацию."},
+  {lecture:2,type:"mc",
+   q:"Что обеспечивает ECC-память?",
+   options:["Только обнаружение однократных ошибок","Исправление однократных и обнаружение двукратных ошибок","Исправление любых ошибок","Горячую замену модулей ОЗУ"],
+   correct:1,
+   expl:"ECC (Enhanced Correction Code) исправляет однократные и обнаруживает двукратные ошибки. Память с паритетом только обнаруживает однократные ошибки."},
+  {lecture:2,type:"mc",
+   q:"Чем RAID5 отличается от RAID4?",
+   options:["RAID5 — зеркалирование, RAID4 — разделение без избыточности","В RAID5 информация о чётности распределена по всем дискам, в RAID4 есть выделенный диск чётности","RAID5 реализуется только программно, RAID4 — только аппаратно","RAID5 не обеспечивает избыточность"],
+   correct:1,
+   expl:"Оба уровня — разделение данных с избыточностью. В RAID4 есть выделенный диск чётности, в RAID5 диски равноправны и чётность распределена по ним."},
+  {lecture:2,type:"mc",
+   q:"Какой главный недостаток схемы «файловый сервер»?",
+   options:["Плохая масштабируемость по числу пользователей","Резкий рост сетевой нагрузки и высокие требования к мощности клиента","Невозможность использовать локальные приложения","Клиент работает только как терминал"],
+   correct:1,
+   expl:"На клиенте выполняется всё, кроме файловых операций. Запросы к БД могут гнать по сети всю базу, а клиент должен быть мощным. Масштабируемость у схемы при этом хорошая."},
+  {lecture:2,type:"mc",
+   q:"Какие функции в трёхзвенной архитектуре выполняются на промежуточном сервере (сервере приложений)?",
+   options:["Средства и логика представления данных","Прикладная логика и логика обработки данных","Внутренние операции БД и файловые операции","Только аутентификация пользователей"],
+   correct:1,
+   expl:"Клиент выполняет представление и логику представления, сервер приложений — прикладную логику и логику данных, сервер БД — операции БД и файловые операции."},
+  {lecture:2,type:"mc",
+   q:"Что из перечисленного относится к классу middleware?",
+   options:["Редиректор сетевой файловой службы","Брокеры запроса объектов (ORB)","Источник бесперебойного питания","Хост-адаптер аппаратного RAID"],
+   correct:1,
+   expl:"К middleware относятся мониторы транзакций, средства асинхронной обработки сообщений (MOM), удалённого вызова процедур (RPC) и брокеры запроса объектов (ORB)."},
+  {lecture:2,type:"open",
+   q:"Перечислите обеспечивающие подсистемы информационной системы и кратко поясните назначение каждой.",
+   answer:"Информационное обеспечение — массивы данных, система классификации и кодирования, унифицированная документация, схемы информационных потоков; цель — своевременная выдача достоверной информации для решений. Техническое обеспечение — комплекс технических средств и документация на них. Математическое и программное обеспечение — методы, модели, алгоритмы и программы (общесистемное и специальное ПО). Организационное обеспечение — методы и средства, регламентирующие взаимодействие работников с техникой и между собой. Правовое обеспечение — правовые нормы, определяющие создание, статус и функционирование ИС; цель — укрепление законности. Дополнительно в лекции упоминается документационное (и лингвистическое) обеспечение.",
+   keys:["Информационное","Техническое","Математическое и программное","Организационное","Правовое","Краткое назначение каждой"]},
+  {lecture:2,type:"open",
+   q:"Назовите основные требования к современному серверу и способы обеспечения отказоустойчивости.",
+   answer:"Требования: 1) масштабируемость — возможность наращивать мощность (процессоры, ОЗУ, внешняя память) пропорционально росту нагрузки; 2) отказоустойчивость и высокая доступность — восстановление и продолжение работы при аппаратных сбоях; 3) управляемость — удалённое управление и сбор сведений о подсистемах. Отказоустойчивость обеспечивают дублированием компонентов и избыточностью данных: горячая замена (Hot Swapping), память с паритетом и ECC, RAID-массивы, кластеры.",
+   keys:["Масштабируемость","Отказоустойчивость / высокая доступность","Управляемость","Дублирование и избыточность","Hot Swapping, ECC, RAID, кластер"]},
+
+  /* ---------- ЛЕКЦИЯ 3 ---------- */
+  {lecture:3,type:"mc",
+   q:"Что из перечисленного относится к пассивному сетевому оборудованию?",
+   options:["Коммутатор","Маршрутизатор","Коммутационная панель","Конвертер среды передачи данных"],
+   correct:2,
+   expl:"Пассивное оборудование: трасса (лотки, кабель-каналы, шкафы) и тракт (розетки, кабели, коммутационные панели). Коммутатор, маршрутизатор и конвертер — активное оборудование."},
+  {lecture:3,type:"mc",
+   q:"Что описывает логическая топология сети?",
+   options:["Физическое расположение кабелей","Правила взаимодействия сетевых станций при передаче данных","Способ соединения носителей данных","Геометрическую форму прокладки кабеля"],
+   correct:1,
+   expl:"Логическая топология — правила взаимодействия станций при передаче данных. Физическая — способ соединения носителей данных."},
+  {lecture:3,type:"mc",
+   q:"Какую длину имеет IP-адрес в протоколе IPv6?",
+   options:["4 байта (32 бита)","8 байт (64 бита)","16 байт (128 бит)","32 байта (256 бит)"],
+   correct:2,
+   expl:"Адрес IPv4 занимает 4 байта (32 бита), IPv6 — 16 байт (128 бит), записывается в шестнадцатеричной системе."},
+  {lecture:3,type:"mc",
+   q:"Какое утверждение о маске подсети верно?",
+   options:["Маска подсети передаётся в каждом IP-пакете","Маска позволяет определить, какая часть IP-адреса относится к сети, а какая — к узлу","Маска — это MAC-адрес шлюза","Маска используется только в IPv6"],
+   correct:1,
+   expl:"Маска — битовая маска для определения адреса подсети и адреса узла. В отличие от IP-адреса, она не является частью IP-пакета."},
+  {lecture:3,type:"mc",
+   q:"С помощью какого протокола находят локальный (MAC) адрес следующего маршрутизатора по известному IP-адресу?",
+   options:["TCP","ARP","DNS","ICMP"],
+   correct:1,
+   expl:"В таблицах маршрутизации хранятся только IP-адреса, а локальный адрес по IP находят протоколом ARP."},
+  {lecture:3,type:"mc",
+   q:"Какой адрес сети назначения используется для маршрута по умолчанию (default)?",
+   options:["127.0.0.1","255.255.255.255","0.0.0.0","192.168.0.1"],
+   correct:2,
+   expl:"Маршрут по умолчанию — 0.0.0.0, обычно последняя строка таблицы. Пакеты в неизвестные сети уходят указанному в ней маршрутизатору."},
+  {lecture:3,type:"mc",
+   q:"Как работает лавинная маршрутизация?",
+   options:["Пакет передаётся в одном случайно выбранном направлении","Пакет передаётся во всех направлениях, кроме того, откуда он поступил","Маршрут выбирается по минимальному значению счётчика пройденных узлов","Маршрут задаётся администратором вручную"],
+   correct:1,
+   expl:"Лавинная маршрутизация гарантирует малое время доставки за счёт ухудшения пропускной способности. Случайная выбирает одно направление, «по предыдущему опыту» использует счётчик узлов."},
+  {lecture:3,type:"mc",
+   q:"Что означает одношаговый подход (next-hop routing) в стеке TCP/IP?",
+   options:["В каждой строке таблицы указан весь маршрут до получателя","Маршрут строит центральный узел и рассылает его всем","Каждый узел выбирает только следующий шаг и указывает адрес следующего маршрутизатора","Пакет всегда проходит не более одного маршрутизатора"],
+   correct:2,
+   expl:"Каждый маршрутизатор выбирает только следующий шаг, а ответственность за дальнейший выбор переходит к следующему маршрутизатору. Это снимает ограничение на число транзитных маршрутизаторов."},
+  {lecture:3,type:"open",
+   q:"Сравните статическую и динамическую маршрутизацию.",
+   answer:"При статической маршрутизации администратор вручную вносит в таблицу маршрутизации местоположение всех сетей; при изменениях в сети он же должен обновить таблицы на всех устройствах. При динамической маршрутизации протокол маршрутизации обеспечивает обмен информацией между соседними маршрутизаторами: каждый обновляет сведения об изученных сетях, а при изменении в сети протокол автоматически сообщает об этом всем маршрутизаторам. Статическая проще и подходит для сетей с простой топологией; динамическая нужна в крупных сетях со сложной и меняющейся топологией.",
+   keys:["Статическая — таблица заполняется вручную администратором","При изменениях администратор обновляет таблицы сам","Динамическая — протокол, обмен с соседними маршрутизаторами","Автоматическое оповещение об изменениях","Область применения каждой"]},
+  {lecture:3,type:"open",
+   q:"Назовите три класса алгоритмов построения таблиц маршрутизации и кратко охарактеризуйте каждый.",
+   answer:"1) Простая маршрутизация не меняется при изменении топологии и состояния сети: случайная, лавинная, по предыдущему опыту. Эффективность низкая, но сеть устойчиво работает при отказах частей. 2) Фиксированная маршрутизация: таблицу составляет вручную администратор; применяется в сетях с простой топологией и на магистралях. Бывает однопутевой и многопутевой. 3) Адаптивная маршрутизация — основной вид в современных сетях со сложной топологией: маршрутизаторы периодически обмениваются топологической информацией с учётом пропускной способности и состояния связей. Бывает локальной, глобальной, централизованной и гибридной.",
+   keys:["Простая (случайная, лавинная, по предыдущему опыту)","Фиксированная (ручная таблица; одно- и многопутевая)","Адаптивная (обмен топологической информацией)","Виды адаптивной: локальная, глобальная, централизованная, гибридная"]}
+];
+
+/* ===================== ЛОГИКА ===================== */
+const app = document.getElementById("app");
+const LETTERS = ["А","Б","В","Г","Д","Е"];
+let state = null;
+
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function startScreen(){
+  const counts = l => QUESTIONS.filter(q=>l===0||q.lecture===l).length;
+  app.innerHTML = `
+    <h1>Тест по администрированию в информационных системах</h1>
+    <p class="sub">30 вопросов по трём лекциям: 24 с выбором ответа и 6 открытых (их оцениваешь сам по эталону).</p>
+    <div class="card">
+      <h2>Что проходим</h2>
+      <label class="opt"><input type="radio" name="lec" value="0" checked> Все лекции (${counts(0)} вопросов)</label>
+      ${[1,2,3].map(l=>`<label class="opt"><input type="radio" name="lec" value="${l}"> ${esc(LECTURES[l])} (${counts(l)})</label>`).join("")}
+      <hr style="border:none;border-top:1px solid var(--line);margin:12px 0">
+      <label class="opt"><input type="checkbox" id="shq" checked> Перемешать вопросы</label>
+      <label class="opt"><input type="checkbox" id="sho" checked> Перемешать варианты ответов</label>
+      <label class="opt"><input type="checkbox" id="noopen"> Без открытых вопросов</label>
+      <label class="opt"><input type="checkbox" id="instant" checked> Показывать правильный ответ сразу после выбора</label>
+      <div class="row" style="margin-top:14px"><button class="btn" id="go">Начать тест</button></div>
+    </div>`;
+  document.getElementById("go").onclick = () => {
+    const lec = +document.querySelector('input[name="lec"]:checked').value;
+    let qs = QUESTIONS.filter(q=>lec===0||q.lecture===lec);
+    if(document.getElementById("noopen").checked) qs = qs.filter(q=>q.type==="mc");
+    if(document.getElementById("shq").checked) qs = shuffle(qs);
+    const sho = document.getElementById("sho").checked;
+    qs = qs.map(q=>{
+      if(q.type!=="mc") return {...q};
+      const order = sho ? shuffle(q.options.map((_,i)=>i)) : q.options.map((_,i)=>i);
+      return {...q, order};
+    });
+    state = {qs, i:0, answers:qs.map(()=>({choice:null, text:"", revealed:false, self:null})),
+             instant:document.getElementById("instant").checked};
+    render();
+  };
+}
+
+function answered(k){
+  const q=state.qs[k], a=state.answers[k];
+  return q.type==="mc" ? a.choice!==null : a.self!==null;
+}
+
+function render(){
+  const {qs,i} = state, q = qs[i], a = state.answers[i];
+  const done = state.answers.filter((_,k)=>answered(k)).length;
+  const locked = q.type==="mc" && state.instant && a.choice!==null;
+  let body = "";
+
+  if(q.type==="mc"){
+    body = `<div class="grid">${q.order.map((oi,pos)=>{
+      let cls="choice";
+      if(locked){ if(oi===q.correct) cls+=" right"; else if(oi===a.choice) cls+=" wrong"; }
+      else if(a.choice===oi) cls+=" sel";
+      return `<button class="${cls}" data-oi="${oi}" ${locked?"disabled":""}>
+                <span class="letter">${LETTERS[pos]}</span><span>${esc(q.options[oi])}</span></button>`;
+    }).join("")}</div>`;
+    if(locked){
+      const ok = a.choice===q.correct;
+      body += `<div class="expl ${ok?"ok":"bad"}"><b>${ok?"Верно.":"Неверно."}</b> ${esc(q.expl)}</div>`;
+    }
+  } else {
+    body = `<textarea id="ta" placeholder="Напиши свой ответ...">${esc(a.text)}</textarea>
+      <div class="row" style="margin-top:12px">
+        ${a.revealed?"":`<button class="btn ghost" id="reveal">Показать эталон</button>`}
+      </div>`;
+    if(a.revealed){
+      body += `<div class="expl"><b>Эталонный ответ:</b><br>${esc(q.answer)}
+        <div style="margin-top:10px"><b>Ключевые пункты:</b><ul class="keys">${q.keys.map(k=>`<li>${esc(k)}</li>`).join("")}</ul></div></div>
+        <p class="small muted" style="margin:14px 0 8px">Сравни свой ответ с эталоном и оцени честно:</p>
+        <div class="row">
+          <button class="btn ${a.self===true?"ok":"ghost"}" id="selfok">Засчитать</button>
+          <button class="btn ${a.self===false?"bad":"ghost"}" id="selfbad">Не засчитать</button>
+        </div>`;
+    }
+  }
+
+  const isLast = i===qs.length-1;
+  app.innerHTML = `
+    <div class="row between"><span class="muted small">Вопрос ${i+1} из ${qs.length}</span>
+      <span class="muted small">Отвечено: ${done}/${qs.length}</span></div>
+    <div class="bar"><i style="width:${done/qs.length*100}%"></i></div>
+    <div class="card">
+      <span class="tag">Лекция ${q.lecture}</span>${q.type==="open"?'<span class="tag open">Открытый вопрос</span>':''}
+      <div class="q">${esc(q.q)}</div>
+      ${body}
+    </div>
+    <div class="row between">
+      <button class="btn ghost" id="prev" ${i===0?"disabled":""}>← Назад</button>
+      <div class="row">
+        <button class="btn ghost" id="finish">Завершить</button>
+        ${isLast?"":`<button class="btn" id="next">Далее →</button>`}
+      </div>
+    </div>`;
+
+  app.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{ a.choice=+b.dataset.oi; render(); });
+  const ta=document.getElementById("ta"); if(ta) ta.oninput=()=>{a.text=ta.value;};
+  const rv=document.getElementById("reveal"); if(rv) rv.onclick=()=>{a.revealed=true; render();};
+  const so=document.getElementById("selfok"); if(so) so.onclick=()=>{a.self=true; render();};
+  const sb=document.getElementById("selfbad"); if(sb) sb.onclick=()=>{a.self=false; render();};
+  document.getElementById("prev").onclick=()=>{state.i--; render(); window.scrollTo(0,0);};
+  const nx=document.getElementById("next"); if(nx) nx.onclick=()=>{state.i++; render(); window.scrollTo(0,0);};
+  document.getElementById("finish").onclick=()=>{
+    const left = state.qs.length-done;
+    if(left>0 && !confirmFinish(left)) return;
+    results();
+  };
+}
+
+function confirmFinish(left){
+  // без системного confirm(): показываем предупреждение прямо на странице
+  if(state.warned) return true;
+  state.warned = true;
+  const n=document.createElement("div");
+  n.className="expl bad"; n.style.marginTop="12px";
+  n.innerHTML=`Без ответа осталось вопросов: <b>${left}</b>. Они будут засчитаны как неверные. Нажми «Завершить» ещё раз, чтобы увидеть результат.`;
+  app.appendChild(n);
+  return false;
+}
+
+function isCorrect(k){
+  const q=state.qs[k], a=state.answers[k];
+  return q.type==="mc" ? a.choice===q.correct : a.self===true;
+}
+
+function results(){
+  const {qs} = state;
+  const total = qs.length;
+  const right = qs.filter((_,k)=>isCorrect(k)).length;
+  const pct = Math.round(right/total*100);
+  const grade = pct>=85?"5 (отлично)":pct>=70?"4 (хорошо)":pct>=50?"3 (удовлетворительно)":"2 (нужно повторить)";
+  const byLec = [1,2,3].map(l=>{
+    const idx = qs.map((q,k)=>q.lecture===l?k:-1).filter(k=>k>=0);
+    return {l, n:idx.length, r:idx.filter(isCorrect).length};
+  }).filter(x=>x.n>0);
+
+  app.innerHTML = `
+    <h1>Результат</h1>
+    <div class="card">
+      <div class="score">${right} / ${total}</div>
+      <div class="muted">${pct}% · ориентировочная оценка: <b style="color:var(--text)">${grade}</b></div>
+      <table style="margin-top:16px"><tr><th>Лекция</th><th>Верно</th><th>%</th></tr>
+        ${byLec.map(x=>`<tr><td>${esc(LECTURES[x.l])}</td><td>${x.r} / ${x.n}</td><td>${Math.round(x.r/x.n*100)}%</td></tr>`).join("")}
+      </table>
+      <div class="row" style="margin-top:18px">
+        <button class="btn" id="again">Пройти заново</button>
+        <button class="btn ghost" id="wrongonly" ${right===total?"disabled":""}>Повторить только ошибки</button>
+      </div>
+    </div>
+    <h2>Разбор ответов</h2>
+    ${qs.map((q,k)=>{
+      const a=state.answers[k], ok=isCorrect(k);
+      let det="";
+      if(q.type==="mc"){
+        det = `<div class="small">Твой ответ: ${a.choice===null?"<i>нет ответа</i>":esc(q.options[a.choice])}</div>
+               ${ok?"":`<div class="small">Правильно: <b>${esc(q.options[q.correct])}</b></div>`}
+               <div class="small muted" style="margin-top:4px">${esc(q.expl)}</div>`;
+      } else {
+        det = `<div class="small">Твой ответ: ${a.text?esc(a.text):"<i>пусто</i>"}</div>
+               <div class="small muted" style="margin-top:4px"><b>Эталон:</b> ${esc(q.answer)}</div>`;
+      }
+      return `<div class="rev ${ok?"ok":"bad"}"><div><b>${k+1}.</b> <span class="tag">Л${q.lecture}</span>${esc(q.q)}</div>${det}</div>`;
+    }).join("")}`;
+
+  document.getElementById("again").onclick=startScreen;
+  const w=document.getElementById("wrongonly");
+  if(w) w.onclick=()=>{
+    const qs2 = shuffle(qs.filter((_,k)=>!isCorrect(k))).map(q=>q.type==="mc"?{...q,order:shuffle(q.options.map((_,i)=>i))}:{...q});
+    state = {qs:qs2, i:0, answers:qs2.map(()=>({choice:null,text:"",revealed:false,self:null})), instant:state.instant};
+    render();
+  };
+  window.scrollTo(0,0);
+}
+
+startScreen();
+</script>
+</body>
+</html>
